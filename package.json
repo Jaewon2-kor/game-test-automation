@@ -1,0 +1,18 @@
+{
+  "name": "phaser-game-test-js",
+  "version": "1.0.0",
+  "description": "Phaser Game Test with Playwright (JS)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "phaser": "^3.60.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.39.0"
+  }
+}

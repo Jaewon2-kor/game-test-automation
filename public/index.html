@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final QA Test Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; }</style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <script>
+        class GameScene extends Phaser.Scene {
+            constructor() { super('GameScene'); }
+
+            async create() {
+                // ✅ [수정 1] 일단 안전하게 0으로 초기화 (undefined 방지)
+                this.score = 0;
+
+                // UI 텍스트 먼저 생성
+                this.scoreText = this.add.text(20, 20, `Score: Loading...`, { fontSize: '32px', fill: '#fff' });
+                
+                // 버튼 생성 (450, 350 위치)
+                const btn = this.add.rectangle(450, 350, 180, 80, 0x00aa00).setOrigin(0,0).setInteractive();
+                this.add.text(470, 375, "CLICK ME", { fontSize: '20px' });
+
+                // ✅ [수정 2] 서버 데이터 가져오기 (실패해도 기본값 100 사용)
+                try {
+                    const res = await fetch('/api/init');
+                    const data = await res.json();
+                    
+                    // 데이터가 있으면 덮어쓰고, 없으면 100점
+                    this.score = (data && data.start_gold) ? data.start_gold : 100;
+                    this.scoreText.setText(`Score: ${this.score}`);
+                    console.log('[Client] 초기화 완료. 현재 점수:', this.score);
+                } catch (e) {
+                    console.error('[Client] 초기화 실패, 기본값 사용');
+                    this.score = 100;
+                    this.scoreText.setText(`Score: ${this.score}`);
+                }
+
+                // 클릭 이벤트
+                btn.on('pointerdown', () => {
+                    // 점수 증가
+                    this.score += 10;
+                    this.scoreText.setText(`Score: ${this.score}`);
+                    
+                    // 시각 효과
+                    btn.setFillStyle(0xff0000);
+                    this.time.delayedCall(100, () => btn.setFillStyle(0x00aa00));
+
+                    // ✅ [수정 3] 보내기 전 데이터 확인 (브라우저 콘솔 F12에서 확인 가능)
+                    const payload = { action: 'click', score: this.score };
+                    console.log('[Client] 서버로 전송 중:', payload);
+
+                    // 서버로 패킷 전송
+                    fetch('/api/action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                });
+
+                // Playwright용 Hook
+                window.testObjects = { attackBtn: btn };
+            }
+        }
+        new Phaser.Game({ type: Phaser.AUTO, width: 800, height: 600, parent: 'game-container', scene: GameScene });
+    </script>
+</body>
+</html>
